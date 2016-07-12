@@ -1,37 +1,36 @@
 #!/usr/bin/env node
 
-/**
- * Module dependencies.
- */
+var cluster = require('cluster');
 
-var app = require('../app');
 var debug = require('debug')('Edison:server');
 var http = require('http');
 
-/**
- * Get port from environment and store in Express.
- */
+var cpuCount = require('os').cpus().length;
 
 var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
 
-/**
- * Create HTTP server.
- */
+if (cluster.isMaster) {
+    for (var i = 0; i < cpuCount; i++) {
+        cluster.fork();
 
-var server = http.createServer(app);
+    }
+} else {
+    console.log("process ");
 
-/**
- * Listen on provided port, on all network interfaces.
- */
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+    var app = require('../app');
+    app.set('port', port);
+    var server = http.createServer(app);
 
-/**
- * Normalize a port into a number, string, or false.
- */
+    server.listen(port);
+    server.on('error', onError);
+    server.on('listening', onListening);
+
+
+}
+
+
+
 
 function normalizePort(val) {
   var port = parseInt(val, 10);
@@ -48,10 +47,6 @@ function normalizePort(val) {
 
   return false;
 }
-
-/**
- * Event listener for HTTP server "error" event.
- */
 
 function onError(error) {
   if (error.syscall !== 'listen') {
@@ -77,9 +72,6 @@ function onError(error) {
   }
 }
 
-/**
- * Event listener for HTTP server "listening" event.
- */
 
 function onListening() {
   var addr = server.address();
